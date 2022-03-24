@@ -152,60 +152,104 @@ def main():
     current_fit = 0
     counter = 0
     solutions = []
+    while len(solutions) != 92:
 
-    # Start the generations
-    while current_fit != 56 and counter < 20000:
+        population.clear()
+        generate_population()
+        # print_population()
 
-        print("\nGeneration Number: ", counter)
+        # Start the generations
+        while current_fit != 56 and counter < 20000:
 
-        fitness_scores = []
-        current_fit = 0
+            fitness_scores = []
+            current_fit = 0
 
-        max_index = 0
-        # Calculate fitness scores for a population
-        for i in range(CHROMOSOME_POPULATION):
+            max_index = 0
+            # Calculate fitness scores for a population
+            for i in range(CHROMOSOME_POPULATION):
+                
+                chromosome = population[i]
+                fitness_score = fitness_function(chromosome)
+                
+                if current_fit < fitness_score:
+                    current_fit = fitness_score
+                    max_index = i
+                fitness_scores.append(fitness_score)    
+
+            # Check if a solution was found
+            if current_fit == 56:
+                solution = population[max_index]
+
+                solution_exists = False
+                # Check if the solution exists
+                for i in solutions:
+                    if i == solution:
+                        solution_exists = True
+                
+                
+                if solution_exists:
+                    print("Solution already exists in keys")
+                    counter = 0
+                    current_fit = 0
+                    break
+                else:
+                    print("Solution: ", solution, "Score: ", fitness_function(solution))
+                    solutions.append(solution)
+                    
+                    # Mirror the solution to get 2 distinct values
+                    mirror_solution = solution
+                    mirror_solution.reverse()
+                    solutions.append(mirror_solution)
+                    print("Mirror Solution: ", mirror_solution, "Score: ", fitness_function(mirror_solution))
+                    counter = 0
+                    current_fit = 0
+                    break
+
+            # Get the fitness probability from the fitness scores
+            fitness_probabilities = get_fitness_probability(fitness_scores)
+
+            # Start selection
+            parent_index1, parent_index2 = selection(fitness_probabilities)
+            parent1 = population[parent_index1]
+            parent2 = population[parent_index2]
+
+            crossover_count = 0
+            index = 0
+            # Crossover the fittest chromosomes and random crossover points to the new population
+            while crossover_count < CHROMOSOME_POPULATION/2:
+                child1, child2 = crossover(parent1, parent2)
             
-            chromosome = population[i]
-            fitness_score = fitness_function(chromosome)
+                # Update the population with crossover children
+                population[index] = child1
+                population[index + 1] = child2
+
+                crossover_count += 1
+                index += 2
             
-            if current_fit < fitness_score:
-                current_fit = fitness_score
-                max_index = i
-            fitness_scores.append(fitness_score)    
+            # Mutate and Update population
+            new_child1 = mutation(child1)
+            population[parent_index1] = new_child1
+            new_child2 = mutation(child2)
+            population[parent_index2] = new_child2
 
-        if current_fit == 56:
-            print("Population: ", population[max_index], "Max score: ", current_fit)
-            solutions.append(population[max_index])
+            # Replace in population
+            counter += 1
 
-        # Get the fitness probability from the fitness scores
-        fitness_probabilities = get_fitness_probability(fitness_scores)
+    print(solutions)
+    # Write solutions to a file
+    f = open("solutions.txt", "w")
+    count = 0
+    for i in solutions:
+        if count == 0:
+            f.write(str(i))
+            f.write('\n')
+        if count == 1:
+            i.reverse()
+            f.write(str(i))
+            f.write('\n')
+        count += 1
+        count %= 2
 
-        # Start selection
-        parent_index1, parent_index2 = selection(fitness_probabilities)
-        # print(parent_index1, parent_index2)
-        parent1 = population[parent_index1]
-        parent2 = population[parent_index2]
-
-        crossover_count = 0
-        index = 0
-        while crossover_count < CHROMOSOME_POPULATION/2:
-            child1, child2 = crossover(parent1, parent2)
-        
-            # Update the population with crossover children
-            population[index] = child1
-            population[index + 1] = child2
-
-            crossover_count += 1
-            index += 2
-        
-        # Mutate and Update population
-        new_child1 = mutation(child1)
-        population[parent_index1] = new_child1
-        new_child2 = mutation(child2)
-        population[parent_index2] = new_child2
-
-        # Replace in population
-        counter += 1
 
 if __name__ == '__main__':
     main()
