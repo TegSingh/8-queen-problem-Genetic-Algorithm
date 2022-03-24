@@ -185,6 +185,7 @@ def main():
                 for i in solutions:
                     if i == solution:
                         solution_exists = True
+                        break
                 
                 
                 if solution_exists:
@@ -197,8 +198,7 @@ def main():
                     solutions.append(solution)
                     
                     # Mirror the solution to get 2 distinct values
-                    mirror_solution = solution
-                    mirror_solution.reverse()
+                    mirror_solution = solution[::-1]
                     solutions.append(mirror_solution)
                     print("Mirror Solution: ", mirror_solution, "Score: ", fitness_function(mirror_solution))
                     counter = 0
@@ -238,17 +238,9 @@ def main():
     print(solutions)
     # Write solutions to a file
     f = open("solutions.txt", "w")
-    count = 0
     for i in solutions:
-        if count == 0:
-            f.write(str(i))
-            f.write('\n')
-        if count == 1:
-            i.reverse()
-            f.write(str(i))
-            f.write('\n')
-        count += 1
-        count %= 2
+        f.write(str(i))
+        f.write('\n')
 
 
 if __name__ == '__main__':
