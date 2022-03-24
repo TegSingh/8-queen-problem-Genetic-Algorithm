@@ -1,11 +1,17 @@
-from random import randint
+from audioop import cross
+from cgitb import small
+from random import randint, random
+from select import select
 
-MUTATION_PROBABILITY = 0.01
+MUTATION_PROBABILITY = 0.2
 CROSSOVER_PROBABILITY = 0.7
 CHROMOSOME_POPULATION = 10
+FITNESS_SOLUTION_VALUE = 56
 
 # Define the chromosomes - This will keep changing with every iteration
 population = []    
+# List the best fit scores per generation
+best_fits = []
 
 def generate_population():
 
@@ -22,64 +28,194 @@ def generate_population():
 
 # Method to print population
 def print_population():
+    print("New Population: ")
     for i in range(CHROMOSOME_POPULATION):
         print(population[i])
 
 # Method to perform Mutation
 def mutation(parent):
-    pass
+
+    for i in range(len(parent)):
+        if random() < MUTATION_PROBABILITY:
+            parent[i] = randint(1, 8)
+    return parent
+    
 
 # Method to perform Crossover
 def crossover(parent1, parent2):
-    pass
+    
+    # Initialize the children
+    child1 = []
+    child2 = []
 
-# Method to perform Cloning
-def cloning():
-    pass
+    # Generate a crossover point
+    crossover_point1 = 6
+    crossover_point2 = 7
+
+    for i in range(len(parent1)):
+        if i >= crossover_point1 and i <= crossover_point2:
+            child1.append(parent2[i])
+            child2.append(parent1[i])
+            continue
+        child1.append(parent1[i])
+        child2.append(parent2[i])
+
+    return child1, child2
+
 
 # Fitness function
 def fitness_function(chromosome):
     
     # Initialize fitness_score for a passed chromosome
     fitness_score = 0
-
+    
     # Check each queen in a column and count how many conflicts he doesnt have
     for i in range(8):
-        column = chromosome[i]
         for j in range(8):      
             if i == j:
                 continue
             # Do 2 queens belong to the same row - Not the same column assumption has been made
-            if chromosome[j] == column:
+            if chromosome[j] == chromosome[i]:
                 continue
-            # Clash on Primary Diagonal
-            if j + chromosome[j] == i + column:
+            if chromosome[i] - chromosome[j] == j - i:
                 continue
-            # Clash on Alternate Diagonal
-            if j - chromosome[j] == i - column:
+            if chromosome[i] - chromosome[j] == i - j:
                 continue
             fitness_score += 1        
 
     return fitness_score
 
+# Method to calculate fitness probability
+def get_fitness_probability(fitness_scores):
+    sum = 0
+    fitness_probabilities = []
+    for i in fitness_scores:
+        sum += i
+    
+    check_sum = 0
+    for i in fitness_scores:
+        fitness_probabilities.append(i/sum)
+        check_sum += i/sum
+
+    return fitness_probabilities
+
+# Method to calculate cumulative probabilities from the provided fitness probability for the roulette wheel
+def get_cumulative_probability(fitness_probabilities):
+    cumulative_probabilities = []
+    sum = 0
+    for i in fitness_probabilities:
+        sum += i
+        if len(cumulative_probabilities) == 9:
+            cumulative_probabilities.append(1.000)
+            continue
+        cumulative_probabilities.append(sum)
+
+    return cumulative_probabilities
+
 # Selection method - Select parent individuals based on fitness function
-def selection():
-    pass
+def selection(fitness_probabilities):
+    
+    # Get values and indexes
+    parent_index1, max = get_largest(fitness_probabilities)
+    parent_index2, smax = get_second_largest(fitness_probabilities)
+    parent1 = population[parent_index1]
+    parent2 = population[parent_index2]
+    return parent_index1, parent_index2
+
+def get_largest(input_list):
+    max_index = 0
+    max = 0
+    for i in range(len(input_list)):
+        if max < input_list[i]:
+            max = input_list[i]
+            max_index = i
+
+    return max_index, max
+
+def get_second_largest(input_list):
+    smax_index = 0
+    smax = 0
+    max_index, max = get_largest(input_list)
+
+    for i in range(len(input_list)):
+        if i == max_index:
+            continue
+        if smax < input_list[i]:
+            smax_index = i
+            smax = input_list[i]
+
+    return smax_index, smax
 
 def main(): 
+
     # Generate a random poopulation and print
     generate_population()
     print_population()
 
-     
-    fitness_scores = []
-    # Calculate fitness scores for a population
-    for i in range(CHROMOSOME_POPULATION):
-        chromosome = population[i]
-        fitness_score = fitness_function(chromosome)
-        fitness_scores.append(fitness_score)    
+    current_fit = 0
+    counter = 0
 
-    print(fitness_scores)
+    # Start the generations
+    while current_fit != 56 and counter < 10000:
+
+        print()
+        print("Generation Number: ", counter)
+        print_population()
+        fitness_scores = []
+        current_fit = 0
+        # Calculate fitness scores for a population
+        for i in range(CHROMOSOME_POPULATION):
+            chromosome = population[i]
+            fitness_score = fitness_function(chromosome)
+            if current_fit < fitness_score:
+                current_fit = fitness_score
+            fitness_scores.append(fitness_score)    
+        print(current_fit)
+        # Get the fitness probability from the fitness scores
+        fitness_probabilities = get_fitness_probability(fitness_scores)
+
+        # Start selection
+        parent_index1, parent_index2 = selection(fitness_probabilities)
+        # print(parent_index1, parent_index2)
+        parent1 = population[parent_index1]
+        parent2 = population[parent_index2]
+
+        # print("Parents: ", parent1, parent2)
+        child1, child2 = crossover(parent1, parent2)
+        # print("Children: ", child1, child2)
+
+        # Update the population with crossover children
+        population[parent_index1] = child1
+        population[parent_index2] = child2
+
+        # print("Calculate the new fitness function after crossover")
+        # Calculate New Fitness values
+        score1 = fitness_function(population[parent_index1])
+        score2 = fitness_function(population[parent_index2])
+        
+        # Mutate and Update population
+        if score1 >= score2: 
+            new_child1 = mutation(child1)
+            population[parent_index1] = child1
+        else:
+            new_child2 = mutation(child2)
+            population[parent_index2] = new_child2
+
+        # Calculate final Fitness values after generation
+        new_score1 = fitness_function(population[parent_index1])
+        new_score2 = fitness_function(population[parent_index2])
+        # print("New Score after generation 1: ", new_score1)
+        # print("New Score after generation 2: ", new_score2)
+
+        # Replace in population
+        counter += 1
+
+
+    # Get the best fitness scores
+    test_solution = [2, 4, 6, 8, 3, 1, 7, 5]
+    fitness_threshold = fitness_function(test_solution)
+    print("The fitness for any possible solution would be: ", fitness_threshold)
+
 
 if __name__ == '__main__':
     main()
