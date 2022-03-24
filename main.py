@@ -194,13 +194,14 @@ def main():
                     current_fit = 0
                     break
                 else:
-                    print("Solution: ", solution, "Score: ", fitness_function(solution))
+                    print("Solution: ", solution, "Score: ", fitness_function(solution), "Counter: ", counter)
                     solutions.append(solution)
                     
                     # Mirror the solution to get 2 distinct values
                     mirror_solution = solution[::-1]
                     solutions.append(mirror_solution)
-                    print("Mirror Solution: ", mirror_solution, "Score: ", fitness_function(mirror_solution))
+                    print("Mirror Solution: ", mirror_solution, "Score: ", fitness_function(mirror_solution), "Counter: ", counter)
+
                     counter = 0
                     current_fit = 0
                     break
@@ -235,13 +236,28 @@ def main():
             # Replace in population
             counter += 1
 
-    print(solutions)
     # Write solutions to a file
     f = open("solutions.txt", "w")
     for i in solutions:
         f.write(str(i))
         f.write('\n')
 
+    # Write new solutions
+    f = open("board_solutions.txt", "w")
+    
+    for index in solutions:
+        counter = 8
+        while counter >= 1:
+            board_row = []
+            for i in index:
+                if i == counter:
+                    board_row.append(1)
+                else:
+                    board_row.append(0)
+            f.write(str(board_row))
+            f.write(str('\n'))
+            counter -= 1
+        f.write('\n\n')
 
 if __name__ == '__main__':
     main()
