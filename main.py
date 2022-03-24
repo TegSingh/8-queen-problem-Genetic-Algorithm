@@ -151,27 +151,32 @@ def main():
 
     current_fit = 0
     counter = 0
+    solutions = []
 
     # Start the generations
-    while current_fit != 56 and counter < 200000:
+    while current_fit != 56 and counter < 20000:
 
-        print()
-        print("Generation Number: ", counter)
-        print_population()
+        print("\nGeneration Number: ", counter)
 
         fitness_scores = []
         current_fit = 0
 
-        generation_population = []
-        
+        max_index = 0
         # Calculate fitness scores for a population
         for i in range(CHROMOSOME_POPULATION):
+            
             chromosome = population[i]
             fitness_score = fitness_function(chromosome)
+            
             if current_fit < fitness_score:
                 current_fit = fitness_score
+                max_index = i
             fitness_scores.append(fitness_score)    
-        print(current_fit)
+
+        if current_fit == 56:
+            print("Population: ", population[max_index], "Max score: ", current_fit)
+            solutions.append(population[max_index])
+
         # Get the fitness probability from the fitness scores
         fitness_probabilities = get_fitness_probability(fitness_scores)
 
@@ -181,16 +186,17 @@ def main():
         parent1 = population[parent_index1]
         parent2 = population[parent_index2]
 
-        print("Parents: ", parent1, parent2)
-        child1, child2 = crossover(parent1, parent2)
-        print("Children: ", child1, child2)
+        crossover_count = 0
+        index = 0
+        while crossover_count < CHROMOSOME_POPULATION/2:
+            child1, child2 = crossover(parent1, parent2)
+        
+            # Update the population with crossover children
+            population[index] = child1
+            population[index + 1] = child2
 
-        # Update the population with crossover children
-        population[parent_index1] = child1
-        population[parent_index2] = child2
-
-        print("Calculate the new fitness function after crossover")
-
+            crossover_count += 1
+            index += 2
         
         # Mutate and Update population
         new_child1 = mutation(child1)
@@ -198,20 +204,8 @@ def main():
         new_child2 = mutation(child2)
         population[parent_index2] = new_child2
 
-        # Calculate final Fitness values after generation
-        new_score1 = fitness_function(population[parent_index1])
-        new_score2 = fitness_function(population[parent_index2])
-        print("New Score after generation 1: ", new_score1)
-        print("New Score after generation 2: ", new_score2)
-
         # Replace in population
         counter += 1
-
-
-    # Get the best fitness scores
-    test_solution = [2, 4, 6, 8, 3, 1, 7, 5]
-    fitness_threshold = fitness_function(test_solution)
-    print("The fitness for any possible solution would be: ", fitness_threshold)
 
 if __name__ == '__main__':
     main()
